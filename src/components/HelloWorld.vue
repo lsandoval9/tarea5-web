@@ -10,8 +10,17 @@
 
       <!-- Sección inferior -->
       <v-data-table :headers="headers" :items="books" class="elevation-1">
+        <template v-slot:item.name="{ item }">
+          {{ item.data.name }}
+        </template>
+        <template v-slot:item.author="{ item }">
+          {{ item.data.author }}
+        </template>
+        <template v-slot:item.year="{ item }">
+          {{ item.data.year }}
+        </template>
         <template v-slot:item.genres="{ item }">
-          {{ item.genres.join(', ') }}
+          {{ item.data.genres.join(', ') }}
         </template>
         <template v-slot:item.actions="{ item }">
           <v-icon size="small" @click="deleteBook(item)">
@@ -29,19 +38,14 @@ import 'firebase/firestore'
 
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, getDocs, addDoc } from 'firebase/firestore/lite';
+import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc  } from 'firebase/firestore/lite';
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-  authDomain: "xxxxxxxxxxxxxxxxxxxxxxxxxx",
-  projectId: "xxxxxxxxxxxxxxxxxxxxxxxxxxx",
-  storageBucket: "xxxxxxxxxxxxxxxxxxxxxxx",
-  messagingSenderId: "xxxxxxxxxxxxxxxxxxx",
-  appId: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
 };
 
 // Initialize Firebase
@@ -72,14 +76,20 @@ export default {
       }
     }
 
-    const deleteBook = (item) => {
-
+    const deleteBook = async (item) => {
+      const deletedBook = await deleteDoc(doc(db, "books", item.id));
+      books.value  = books.value.filter(b => b.id != item.id);
     }
 
     onMounted(async () => {
       const booksCol = collection(db, 'books');
       const booksSnapshot = await getDocs(booksCol);
-      const booksList = booksSnapshot.docs.map(doc => doc.data())
+      const booksList = booksSnapshot.docs.map(doc => ({
+        'id': doc.id, 
+        'data': doc.data()
+      }));
+
+      console.log(booksList);
 
       booksList.forEach(book => {
         books.value.push(book)
